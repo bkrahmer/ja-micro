@@ -5,54 +5,32 @@ Ja-micro is a lightweight Java framework for building microservices.
 ## Introduction ##
 
 Ja-micro is a framework that allows developers to easily develop microservices in 
-Java. It was developed at Sixt, primarily over the course of 2016, during a push to 
-create a new platform. That platform was started with a goal of supporting two primary 
-languages, being Golang and Java. 
+Java. It was developed beginning in 2016, during a push to create a new platform 
+based on Kubernetes. With version 4, the focus is on easy integration with OpenShift, 
+and using standards such as OpenApi, gRPC and AMQP.  It also supports database 
+migrations, Infinispan distributed memory featues, and a rich Kafa integraions.  It 
+includes a Gradle wrapper for elimination of boilerplate and simultaneously rich 
+customization of build pipelines. 
 
-We use [Go Micro](https://github.com/micro) as our framework for our Go services, so a 
-primary concern for this framework is to be compatible with Micro. They diverge a bit in 
-capabilities and methodologies, but they are indeed compatible. 
-
-The framework takes care of many of the concerns so that developers can simply 
-focus on the functionality of their services instead.
-
-[See the wiki](https://github.com/Sixt/ja-micro/wiki) to get started.
+The framework takes care of many of the concerns needed in a modern containerized 
+application so that developers can simply focus on the business functionality 
+of their services rather than tedius boostrapping.  Cloud native principles 
+are used wherever possible, and example code explores other best practices.
 
 ## Features ##
 
-* Simply build service as docker container or fat jar.
+* Simply build service an OCI container or fat jar.
 * Configuration from environment, command-line and external configuration services.
 * Standardized json logging.
 * Standardized metrics reporting
 * Simple interface for calling endpoints on other services and handling errors from them.
-* Client-side load-balancer
-* Simple interface for a service to support health checks.
+* Simple interface for a service to support readiness and health checks.
 * Database migrations built-in.
-* Simplified event-handling using Kafka.
-* Pluggable service registry to register and discover service instances.
-* Compatible with Go Micro to allow choice of implementation language.
+* Simplified event-handling using Kafka or AMQP.
 * Guice dependency injection for ease of implementation and testing scenarios.
-* Components to create service integration testing scenarios.
+* Components to create service integration (contract) testing scenarios.
 
 ## Details
-
-### Service Registry ###
-
-The service registry is pluggable with different backends (consul, etc.) The purpose
-to for each service instance (which may be coming up on a rather anonymous IP address
-and random port) to register so that other instances can locate it. It is also by
-extension, available for services to use to locate instances of other services.
-The service information contains specially-formatted tags which contain information
-about the format of the request and response messages for each endpoint, and other
-tags.
-
-### Client-side Load-balancer ###
-
-There is a client-side load-balancer in place behind the facade of the `RpcClient`.
-This interacts with the service registry to track instances of services a service wants
-to interact with, tracks their state of health in order to know whether the instances
-should receive requests, and tracks the response results of each rpc call in order to
-maintain 'circuit breakers' to limit exposure to non-healthy service instances.
 
 ### RpcClient and Error Handling ###
 
@@ -142,22 +120,3 @@ that can serve as a complete service mock, available in service registry and ser
 real rpc requests. However, the developer maps the requests and responses instead
 of a real instance serving those requests.
 
-##  Compatibility ##
-
-Ja-micro is meant to keep compatibility so that service developers can easily choose
-between developing a service in Java or Go. Other languages can also be supported by
-using the Go Micro sidecar.
-
-## Contributing ##
-
-Contributions to the continued evolution of the framework are welcome. Please keep in 
-mind that the primary focus is to keep the framework minimal. Backwards-compatibility 
-and following semantic versioning is strictly required. For any major changes 
-that you would like to propose, please raise an issue and discuss the issue before 
-implementing to avoid wasted efforts on changes that would be rejected.
-
-## Roadmap ##
-
-Over the next weeks and months we will produce a series of screencasts to highlight 
-various aspects of the framework and how developers can use it to solve various 
-engineering problems in a modern microservices environment.

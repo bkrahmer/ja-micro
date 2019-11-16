@@ -8,19 +8,30 @@ Ja-micro is a framework that allows developers to easily develop microservices i
 Java. It was developed beginning in 2016, during a push to create a new platform 
 based on Kubernetes. With version 4, the focus is on easy integration with OpenShift, 
 and using standards such as OpenApi, gRPC and AMQP.  It also supports database 
-migrations, Infinispan distributed memory featues, and a rich Kafa integraions.  It 
-includes a Gradle wrapper for elimination of boilerplate and simultaneously rich 
+migrations, Infinispan distributed memory features, and a rich Kafka integration.  It 
+includes a Gradle wrapper for elimination of boilerplate and simultaneously allow rich 
 customization of build pipelines. 
 
 The framework takes care of many of the concerns needed in a modern containerized 
 application so that developers can simply focus on the business functionality 
-of their services rather than tedius boostrapping.  Cloud native principles 
+of their services rather than tedious boostrapping.  Cloud native principles 
 are used wherever possible, and example code explores other best practices.
+
+## Audience ##
+
+The audience for Ja-micro is engineers who want to quickly build microservices for the 
+cloud.  With seamless integrations for many of the top technologies and software products,
+you can focus entirely on building productive business logic, not repeatedly building 
+up monotonous scaffolding and the tests to prove that the integration is working.  
+If you have the interface for a service in mind, you can get started writing code within
+ten minutes.  There are many different use cases that Ja-micro can handle.  To minimize
+start-up speed and make the executable artifact as small as possible, you choose which
+ports and adapters to include in your service.
 
 ## Features ##
 
 * Simply build service an OCI container or fat jar.
-* Configuration from environment, command-line and external configuration services.
+* Configuration from environment variables, the command-line or external configuration services.
 * Standardized json logging.
 * Standardized metrics reporting
 * Simple interface for calling endpoints on other services and handling errors from them.
@@ -29,6 +40,7 @@ are used wherever possible, and example code explores other best practices.
 * Simplified event-handling using Kafka or AMQP.
 * Guice dependency injection for ease of implementation and testing scenarios.
 * Components to create service integration (contract) testing scenarios.
+* Create services that are part of an event-driven architecture
 
 ## Details
 
@@ -47,8 +59,8 @@ retriable. In a future release, we will add support for time budgeting, where a 
 how much time is allowed to service the whole request. For now, we have a static policy
 with a default timeout of 1000ms, and this can be customized per client. 
 
-The `RpcCallException` class defines all of
-our exception categories, their default retriable setting, and what the resulting HTTP status code is (when using
+The `RpcCallException` class defines all of our exception categories, their default 
+retriable setting, and what the resulting HTTP status code is (when using
 an HTTP transport). When one service calls another (client calling server), if a server throws an exception
 during processing the response, the exception is transparently transported back to the client and can be
 rethrown on the client-side (ignoring the retry aspect here).
@@ -56,12 +68,15 @@ rethrown on the client-side (ignoring the retry aspect here).
 Default RpcClient retry policy (1) can be overridden with setting 'rpcClientRetries'.
 Default RpcClient timeout policy (1000ms) can be overridden with setting 'rpcClientTimeout'.
 
-### Health Checks ###
+### Readiness and Liveness Probes ###
+ 
+In a microservice architecture, you want your orchestrator (Kubernetes / OpenShift) to
+know when a service is ready to handle requests when it first starts up.  For this, there
+is support for developers to easily create readiness probe endpoints.
 
-Every few seconds, the health state for a service instance is reported to the service
-registry plugin. Using annotations, there is support for a service developer to easily
-hook into health checking to mark a service instance as unhealhty. There is also an
-interface to immediately change the health state of an instance.
+Similarly, sometimes services may no longer be functional enough to serve traffic.  Liveness
+probes can be configured so that the orchestrator can know when a service is not functional,
+and may react by creating new instances or issue notices to an alerting system.
 
 ### Configuration Handling ###
 
@@ -80,43 +95,41 @@ be used to dynamically create properties on those objects. The log format can be
 
 ### Metrics ###
 
-There is standardized metric handling in place. This is heavily opinionated to Sixt's
-infrastructure, and uses metrics formatted in a specific format and sent to an influx agent
-to be reported back to a central influxdb cluster.  The metrics reporting is pluggable to 
-support reporting metrics in any desired format to any desired destination.
+There is standardized metric handling in place. We use Micrometer as a metric library,
+which has plugins for dozens of back-end systems to integrate with.
 
-### Kafka Events ###
+## Event-driven Architecture ###
 
-There are factories/builders in place to easily create publishers and subscribers for
-topics in Kafka.
+There are factories/builders in place to easily create publishers and subscribers that 
+integrate with Kafka or AMQP (ActiveMQ, RabbitMQ, etc).
 
 ### Output Artifacts ###
 
-One can build a shadow jar (fat jar - all dependencies included), or a docker image. One might
-use the shadow jar for developer testing. The shadow jar is a dependency of the docker image
-tasks as well. To start a service in a debugger, use the `JettyServiceBase` as a main class.
+One can build a shadow jar (fat jar - all dependencies included), or an OCI image. One might
+use the shadow jar for developer testing or publishing as an artifact.
 
 ### Database Migrations ###
 
 There is currently support for Flyway database migrations, which supports many different
 SQL databases. This support extends into carefully controlling the service lifecycle
-and health checks. A future version should support basic migration support for DynamoDB
-instances.
+and readiness probes.
 
 ### Dependency Injection ###
 
 Dependency injection is heavily used in Ja-micro. It is strictly supporting Guice.
 
-### Service Integration Testing ###
+### Service Testing ###
 
-We heavily use automation at Sixt in our microservice projects. To support this, the framework 
-gives the ability to developers to automate service integration tests. What this means is 
-that core infrastructure dependencies (for example, on one service, this is consul, 
-postgres, zookeeper and kafka) and the
-service itself are started as containers under docker-compose. Additionally, to
-eliminate the problem that would arise of starting containers for every other service
+The ability to test your microservice code from several different aspects and to achieve
+various goals is driven by the testing pyramid approach.  At the base of the pyramid is where
+the majority of your tests should be, which are unit tests.  They are at the base because 
+this is usually the first opportunity to catch bugs and run the fastest.  Up on level from
+here is what we call Integration Tests.  Here, you are testing specific integration code,
+such as a PostgresRepository.  In our recipes, we show an example of how to test database
+migration code and repository code against a real instance of Postgres running in a container.
+Going up another level, we have Service Integration Tests, which boots the compiled
+service as a container along with other required infrastructure components in docker-compose.
+To eliminate the problem that would arise of starting containers for every other service
 dependency (and their dependencies, etc.), there exists a class called `ServiceImpersonator`
-that can serve as a complete service mock, available in service registry and serving
-real rpc requests. However, the developer maps the requests and responses instead
-of a real instance serving those requests.
-
+that can serve as a complete service mock, serving real rpc requests. However, the developer 
+maps the requests and responses instead of a real instance serving those requests.

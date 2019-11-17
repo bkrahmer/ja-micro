@@ -131,11 +131,12 @@ service.  These consist of:
 * gRPC (HTTP 2.0) (specified by a protobuf interface)
 * JMS / AMQP 
 * Kafka (acting as a consumer of one or more topics)
+* Timer (arbitrary cronjob-like execution rules) 
 
 We use the term adapters to describe something that isn't driving input to the service,
 but rather to serve the back-end of the service.  We have built samples of using these
 adapters into the recipe book, including tests that verify the integration.  Each
-of these can be switched on in the gradle build in order to keep the service artifact
+of these can be switched on in the gradle build in order to keep the artifact size
 and startup time to a minimum.  The adapters consist of:
 * Postgres database
 * Spring Data
@@ -164,8 +165,10 @@ service as a container along with other required infrastructure components in do
 To eliminate the problem that would arise of starting containers for every other service
 dependency (and their dependencies, etc.), there exists a class called `ServiceImpersonator`
 that can serve as a complete service mock, serving real rpc requests. However, the developer 
-maps the requests and responses instead of a real instance serving those requests.
-
+maps the requests and responses instead of a real instance serving those requests.  End-
+to-end tests are another level higher, using the system as a black box, as a customer would.  
+When possible, E2E tests are a good solution as a quality gate in a CI/CD pipeline for 
+whenb to promote an artifact or the like.
 
 # Getting Started #
 
@@ -180,3 +183,17 @@ build.gradle file.
 * When using json-rpc or gRPC, define your service method interface and request/response
 objects in profobuf files.  Do a build, and with your generated Java classes, you are ready
 to define and implement your endpoints.
+
+# Service Design #
+* The primary concern is to keep services stateless and contention-free
+* Make all operations idempotent, wherever possible
+* If business processes require state, consider using database-backed state machines.
+* Lean towards making operations asynchronous with messaging.  Some use cases make an easier
+decision than others.  Synchronous operations can be easier to code (any synchronous operation
+can basically be decomposed into an async process, at a cost of adding complexity), but can
+lead to cascading failures in a larger system.
+* If you are building a microservice landscape from scratch, our suggestion is to
+start with json-rpc or gRPC for sync and AMQP for async.  You can get a user-friendly 
+interface (when everything is documented properly) with an OpenAPI spec, but the specs are 
+tedious and extremely verbose.  The protobuf-based interfaces are short, explicit, and have
+tooling available for many other languages to interface with.
